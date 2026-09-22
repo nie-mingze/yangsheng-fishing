@@ -226,7 +226,6 @@ html,body{width:100%;height:100%;margin:0;padding:0;overflow:hidden;background:#
 #charBox{display:none;}
 #hudBtns{display:none;}
 #dateWeatherHud{font-size:12px;font-weight:bold;color:var(--gold);letter-spacing:.5px;margin-bottom:2px;}
-#hiddenHintBar{font-size:11px;padding:5px 9px;left:auto;right:8px;bottom:calc(96px + env(safe-area-inset-bottom));top:auto;transform:none;width:auto;max-width:62vw;z-index:19;}
 /* 玩法按键(左上信息下方) */
 #tkGear{position:absolute;right:8px;top:8px;z-index:18;display:flex;gap:8px;}
 #tkGear .tkBtn{width:64px;height:52px;font-size:13px;border-radius:12px;display:flex;flex-direction:column;align-items:center;justify-content:center;
@@ -428,6 +427,9 @@ html,body{width:100%;height:100%;margin:0;padding:0;overflow:hidden;background:#
       <div id="xpTrack"><div id="xpFill"></div></div>
       <div class="rowBtns" style="margin-top:8px;">
         <button class="smallBtn primary" id="btnSleep">🛏 睡觉</button>
+        <button class="smallBtn" id="btnSleepMinus" style="min-width:26px;padding:2px 6px;font-size:13px;">-</button>
+        <span id="sleepHoursVal" style="font-size:12px;color:#ffd34d;font-weight:bold;margin:0 2px;">8</span>
+        <button class="smallBtn" id="btnSleepPlus" style="min-width:26px;padding:2px 6px;font-size:13px;">+</button>
         <button class="smallBtn" id="btnEat">🍚 吃饭 (饭团 x<span id="foodCount">0</span>)</button>
         <button class="smallBtn" id="btnDrink">💧 喝水 (清水 x<span id="waterCount">0</span>)</button>
       </div>
@@ -750,7 +752,7 @@ const SFX = {
 };
 
 /* ---------- 游戏状态 ---------- */
-const TIME_SPEED=2;      // 1现实秒 = 2游戏分钟(1天=12分钟)
+const TIME_SPEED=0.2;      // 1现实秒=0.2游戏分钟(1小时=5分钟, 1天=2小时)      // 1现实秒 = 2游戏分钟(1天=12分钟)
 const G = {
   state:"title",        // title | char | fishing
   sub:"cast",           // cast | waiting | hook | reel
@@ -786,7 +788,7 @@ function curMap(){ return MAP_DEFS[SV.map]; }
 /* ---------- 时间/昼夜 ---------- */
 function hourFloat(){ return G.time/60; }
 function isNight(){ const h=hourFloat(); return h>=19 || h<5.5; }
-function timeText(){ const h=Math.floor(G.time/60), m=Math.floor(G.time%60); return (h<10?"0":"")+h+":"+(m<10?"0":"")+m; }
+function timeText(){ const h=Math.floor(G.time/60), m=Math.floor(G.time%60); return h+":"+(m<10?"0":"")+m; }
 function dayTint(){
   const h=hourFloat();
   if(h>=7 && h<17) return null;                 // 纯白天用地图原色
@@ -954,6 +956,18 @@ const FISH_MAP=[
   "T...BBBB....","TT.BBBBBBB..","TTBBBBBBBBBB","TTBBBBBBBBBE","TTBBBBBBBBBE","TTBBBBBBBBBB","TT.BBBBBBB..","T...BBBB....",
 ];
 function drawFish(cx,cy,len,pal,dir,wob,f){
+  if(f&&f.hidden){ /* 隐藏鱼: 黑色发光剪影+紫瞳 */
+    ctx.save();
+    ctx.fillStyle="rgba(8,8,18,0.92)";
+    ctx.beginPath(); ctx.ellipse(cx,cy,len*0.85,len*0.36,0,0,Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.moveTo(cx+len*0.85,cy); ctx.lineTo(cx+len*1.32,cy-len*0.22); ctx.lineTo(cx+len*1.32,cy+len*0.22); ctx.closePath(); ctx.fill();
+    ctx.fillStyle="#c8a2ff";
+    ctx.beginPath(); ctx.arc(cx-len*0.3,cy-len*0.08,len*0.09,0,Math.PI*2); ctx.fill();
+    ctx.fillStyle="#ffd34d";
+    ctx.beginPath(); ctx.arc(cx-len*0.3,cy-len*0.08,len*0.04,0,Math.PI*2); ctx.fill();
+    ctx.restore();
+    return;
+  }
   const cell=PX*len/12, w=cell*12, h=cell*8;
   /* 鱼种外形: 由鱼 id 哈希决定, 同种鱼永远同一长相 */
   const fsrc=f||G.fish;
@@ -1231,7 +1245,7 @@ function calcWeight(f){
 function caught(f){
   const w=calcWeight(f);
   // 单价=基础价×品质倍率×(1+角色/鱼竿加成), 金币=单价×重量, 保证显示一致
-  const unit=Math.round(f.price*TIERS[f.tier].valMult*(1+mods().money)*10)/10;
+  const unit=Math.round(f.price*TIERS[f.tier].valMult*(f.chroma?5:1)*(1+mods().money)*10)/10;
   const value=Math.round(unit*w);
   const xp=Math.round(w*TIERS[f.tier].houseMult);
   G.pending={f,w,value,unit,xp};
@@ -1698,7 +1712,7 @@ function openPicker(standIdx){
       '<div style="font-size:9px;color:#9aa3d8;">'+c.maxW.toFixed(1)+'kg</div>';
     const fc=cell.querySelector("canvas"); const fctx=fc.getContext("2d");
     const tmp=ctx; ctx=fctx; drawFish(48,36,26,TIER_PAL[f.tier],1,0,f); ctx=tmp;
-    cell.onclick=()=>{ SV.house.stands[standIdx].fish=id; commit(); SFX.buy(); el("pickerModal").classList.remove("show"); renderHouse(); updateDOM(); };
+    cell.onclick=()=>{ for(let j=0;j<SV.house.stands.length;j++){ if(j!==standIdx&&SV.house.stands[j]&&SV.house.stands[j].fish===id){ toast("该鱼已在展示台"+(j+1)+"上","#ff6b6b"); SFX.err(); return; } } SV.house.stands[standIdx].fish=id; commit(); SFX.buy(); el("pickerModal").classList.remove("show"); renderHouse(); updateDOM(); };
     grid.appendChild(cell);
   }
   el("pickerModal").classList.add("show");
@@ -1778,7 +1792,11 @@ el("btnShopClose").onclick=closeModals;
 el("btnMapClose").onclick=closeModals;
 el("btnCodexClose").onclick=closeModals;
 el("btnHouseClose").onclick=closeModals;
-el("btnSleep").onclick=()=>{ advanceTime(480); SV.life.energy=100; G.paused=false; closeModals(); commit(); SFX.buy(); toast("睡了一觉, 精力满满!","#8fd67f"); startCast(); };
+var sleepHours=8;
+function sleepSet(d){ sleepHours=Math.max(1,Math.min(24,sleepHours+d)); var v=el("sleepHoursVal"); if(v) v.textContent=sleepHours; }
+var bsm=el("btnSleepMinus"); if(bsm) bsm.onclick=function(){ sleepSet(-1); };
+var bsp=el("btnSleepPlus"); if(bsp) bsp.onclick=function(){ sleepSet(1); };
+el("btnSleep").onclick=()=>{ const h=sleepHours; const gain=Math.min(100,SV.life.energy+25*h)-SV.life.energy; advanceTime(h*60); SV.life.energy+=gain; G.paused=false; closeModals(); commit(); SFX.buy(); toast("睡了"+h+"小时, 精力+"+gain+"!","#8fd67f"); startCast(); };
 el("btnEat").onclick=()=>{ if(SV.life.food<=0){ toast("没有饭团了, 去商店买!","#ffd34d"); return; } SV.life.food--; SV.life.hunger=Math.min(100,SV.life.hunger+45); commit(); SFX.buy(); renderHouse(); updateDOM(); };
 el("btnDrink").onclick=()=>{ if(SV.life.water<=0){ toast("没有清水了, 去商店买!","#6fb7ff"); return; } SV.life.water--; SV.life.thirst=Math.min(100,SV.life.thirst+45); commit(); SFX.buy(); renderHouse(); updateDOM(); };
 el("btnPickerClose").onclick=()=>el("pickerModal").classList.remove("show");
@@ -2530,7 +2548,7 @@ function questProgress(f,w,value){
 function caught(f){
   const w=calcWeight(f);
   const m=mods();
-  const unit=Math.round(f.price*TIERS[f.tier].valMult*(1+m.money)*100)/100;
+  const unit=Math.round(f.price*TIERS[f.tier].valMult*(f.chroma?5:1)*(1+m.money)*100)/100;
   const value=Math.round(unit*w*10)/10;
   const xp=Math.round(w*TIERS[f.tier].houseMult);
   G.pending={f,w,value,unit,xp};
@@ -3055,7 +3073,7 @@ function sellKeptFish(id){
   const c=SV.codex[id]||{maxW:0};
   const w=Math.max(0.5,c.maxW||0.5);
   const m=mods();
-  const unit=Math.round(f.price*TIERS[f.tier].valMult*(1+m.money)*100)/100;
+  const unit=Math.round(f.price*TIERS[f.tier].valMult*(f.chroma?5:1)*(1+m.money)*100)/100;
   const value=Math.round(unit*w*10)/10;
   SV.house.kept=SV.house.kept.filter(x=>x!==id);
   for(let i=0;i<SV.house.stands.length;i++){ const st=SV.house.stands[i]; if(st&&st.fish===id) SV.house.stands[i]={fish:null}; }
@@ -3512,7 +3530,7 @@ function showResult(type,f,w,value,unit){
 function caught(f){
   const w=calcWeight(f);
   const m=mods();
-  const unit=Math.round(f.price*TIERS[f.tier].valMult*(1+m.money)*100)/100;
+  const unit=Math.round(f.price*TIERS[f.tier].valMult*(f.chroma?5:1)*(1+m.money)*100)/100;
   const value=Math.round(unit*w*10)/10;
   const xp=Math.round(w*TIERS[f.tier].houseMult);
   G.pending={f,w,value,unit,xp};
@@ -4188,7 +4206,7 @@ function sellKeptFish(id){
   const c=SV.codex[id]||{maxW:0};
   const w=Math.max(0.5,c.maxW||0.5);
   const m=mods();
-  const unit=Math.round(f.price*TIERS[f.tier].valMult*(1+m.money)*100)/100;
+  const unit=Math.round(f.price*TIERS[f.tier].valMult*(f.chroma?5:1)*(1+m.money)*100)/100;
   const value=Math.round(unit*w*0.3*10)/10;
   SV.house.kept=SV.house.kept.filter(x=>x!==id);
   for(let i=0;i<SV.house.stands.length;i++){ const st=SV.house.stands[i]; if(st&&st.fish===id) SV.house.stands[i]={fish:null}; }
@@ -4219,7 +4237,7 @@ function drawCharge(){
 function caught(f){
   const w=calcWeight(f);
   const m=mods();
-  const unit=Math.round(f.price*TIERS[f.tier].valMult*(1+m.money)*100)/100;
+  const unit=Math.round(f.price*TIERS[f.tier].valMult*(f.chroma?5:1)*(1+m.money)*100)/100;
   const value=Math.round(unit*w*10)/10;
   const xp=Math.round(w*TIERS[f.tier].houseMult);
   G.pending={f,w,value,unit,xp};
@@ -4695,16 +4713,17 @@ function consumeBait(){ const bt=currentBait(); if(!bt)return null; SV.bait[bt]-
 function rollFish(){
   const hid=HIDDEN_FISH[SV.map];
   if(hid){
-    let hRate=0.0016;
+    let hRate=0.003;
     const bt=currentBait();
     if(bt==="dragon") hRate+=0.011; else if(bt==="spark") hRate+=0.004; else if(bt==="worm") hRate+=0.002;
-    if(isAbnormalWeather()) hRate=Math.max(hRate,0.05);
-    if(Math.random()<hRate && hiddenCond(hid)) return Object.assign({},hid.fish,{hidden:true});
+    hRate*=(1+(mods().rare||0)*2.5);
+    if(hiddenCond(hid)) hRate=Math.max(hRate,0.05);
+    if(Math.random()<hRate) return Object.assign({},hid.fish,{hidden:true});
   }
   const tier=rollTier();
   const list=FISH_LIST.filter(f=>f.map===SV.map && f.tier===tier);
   const f=list[Math.floor(Math.random()*list.length)]||list[0];
-  const chromaChance=0.05+((G._baitRare||0)*0.7);
+  const chromaChance=0.02+((G._baitRare||0)*0.5);
   if(Math.random()<chromaChance) return Object.assign({},f,{chroma:true});
   return f;
 }
@@ -4788,7 +4807,7 @@ function caught(f){
   const m=mods();
   let mult=1;
   if(f.chroma) mult*=2;
-  const unit=Math.round(f.price*TIERS[f.tier].valMult*(1+m.money)*mult*100)/100;
+  const unit=Math.round(f.price*TIERS[f.tier].valMult*(f.chroma?5:1)*(1+m.money)*mult*100)/100;
   const value=Math.round(unit*w*10)/10;
   const xp=Math.round(w*TIERS[f.tier].houseMult);
   G.pending={f,w,value,unit,xp};
@@ -4999,9 +5018,10 @@ function renderCodex(){
     const hf=HIDDEN_FISH[mid]; if(!hf) continue;
     const got=SV.hiddenCodex&&SV.hiddenCodex[mid];
     const cell=document.createElement("div"); cell.className="cdxCell"+(got?"":" locked");
-    cell.style.cssText="background:#0a0a14;";
+    cell.style.cssText="background:#0a0a14;cursor:pointer;";
+    cell.onclick=function(){ showHiddenDetail(mid); };
     cell.innerHTML='<canvas width="96" height="72"></canvas>'+
-      '<div class="cdxName '+(got?"tier-red":"")+'">'+(got?("👻 "+hf.name):"👻 ???")+'</div>'+
+      '<div class="cdxName '+(got?"tier-red":"")+'">👻 '+hf.name+'</div>'+
       '<div class="cdxMeta">'+(got?("已捕获 · 金币+"+Math.round(hf.bonus.money*100)+"% 张力+"+hf.bonus.tmax):"隐藏鱼 · 极为稀有")+'</div>';
     if(got){
       const fc=cell.querySelector("canvas"); const fctx=fc.getContext("2d");
@@ -5019,6 +5039,34 @@ function renderCodex(){
   const totalTxt=(codexFilter==="all")?("全球共 "+FISH_LIST.length+" 种 (+12 隐藏鱼)"):(MAP_DEFS[codexFilter].name+"钓点 共 "+list.length+" 种 (+1 隐藏鱼)");
   info.textContent="已钓获 "+caught+" / "+list.length+" ("+totalTxt+")";
   grid.appendChild(info);
+}
+
+/* ---- 隐藏鱼详情(图鉴点击) ---- */
+function hiddenCondText(hid){
+  const c=hid.cond||{};
+  const s=(c.seasons&&c.seasons.length)?c.seasons.join("、"):"任意";
+  const w=(c.weather&&c.weather.length)?c.weather.map(function(x){return WEATHER_NAMES[x]||x;}).join("、"):"任意";
+  const h=(c.h0!==undefined&&c.h1!==undefined)?(String(c.h0).padStart(2,"0")+":00 - "+String(c.h1).padStart(2,"0")+":00"):"任意";
+  return "季节:"+s+"　天气:"+w+"　时间:"+h;
+}
+function showHiddenDetail(mid){
+  const hf=HIDDEN_FISH[mid]; if(!hf) return;
+  const got=SV.hiddenCodex&&SV.hiddenCodex[mid];
+  const m=MAP_DEFS[mid]||{name:mid};
+  const cond=hiddenCondText(hf);
+  let d=document.getElementById("hiddenDetail");
+  if(!d){ d=document.createElement("div"); d.id="hiddenDetail"; document.body.appendChild(d); }
+  const gotTxt=got?("✓ 已捕获 · 金币+"+Math.round(hf.bonus.money*100)+"% · 稀有+"+Math.round(hf.bonus.rare*1000)/10+"% · 张力+"+hf.bonus.tmax):"未捕获 · 继续探索";
+  d.innerHTML='<div style="position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:99991;display:flex;align-items:center;justify-content:center;" onclick="var e=document.getElementById(\'hiddenDetail\'); if(e) e.remove();">'+
+    '<div style="background:#121838;border:3px solid #6b4fa0;border-radius:16px;padding:20px 18px;max-width:88vw;width:300px;color:#cfd6ff;font:bold 14px monospace;text-align:center;" onclick="event.stopPropagation();">'+
+    '<div style="font-size:22px;color:#c8a2ff;">👻 '+hf.name+'</div>'+
+    '<div style="color:#8a93c8;font-size:12px;margin-top:4px;">'+m.name+' · 隐藏鱼</div>'+
+    '<div style="margin-top:12px;font-size:13px;color:#ffd34d;">触发条件（满足时几率大幅提升）</div>'+
+    '<div style="margin-top:6px;font-size:12px;line-height:1.9;color:#cfd6ff;">'+cond+'</div>'+
+    '<div style="margin-top:8px;font-size:11px;color:#8a93c8;">一般情况也有 0.3% 几率出没<br>高品质鱼竿·鱼饵可提升概率</div>'+
+    '<div style="margin-top:10px;font-size:12px;color:#8ee08a;">'+gotTxt+'</div>'+
+    '<div style="margin-top:12px;font-size:11px;color:#6a73ab;">点击空白处关闭</div>'+
+    '</div></div>';
 }
 
 /* ---- 商店: 鱼饵区 ---- */
@@ -6186,7 +6234,7 @@ function checkHiddenHints(){
     if(abn){
       if(!SV._hintShown.__abn){
         SV._hintShown.__abn=1;
-        toast("🌪 隐藏鱼全线出没!","#ff6b6b");
+        /* 隐藏鱼提示已移至图鉴 */
       }
       return;
     }
@@ -6196,7 +6244,7 @@ function checkHiddenHints(){
       if(hiddenCond(hf)&&MAP_DEFS[m]){
         if(!SV._hintShown[m]){
           SV._hintShown[m]=1;
-          toast("🌦 【"+MAP_DEFS[m].name+"】"+hf.name+" 出没!","#c8a2ff");
+          /* 隐藏鱼提示已移至图鉴 */
         }
       }else{ delete SV._hintShown[m]; }
     }
@@ -6218,27 +6266,7 @@ function checkHiddenHints(){
         hud.insertBefore(dh, hud.firstChild);
       }
       dh.textContent=dateText()+" · "+timeText();
-      let hint=null;
-      if(isAbnormalWeather()){
-        hint="🌪 隐藏鱼全线出没!";
-      }else{
-        for(const m in HIDDEN_FISH){
-          if(hiddenCond(HIDDEN_FISH[m])&&MAP_DEFS[m]){
-            hint="🌦 【"+MAP_DEFS[m].name+"】"+HIDDEN_FISH[m].name+" 出没!";
-            break;
-          }
-        }
-      }
-      let hb=document.getElementById("hiddenHintBar");
-      if(hint){
-        if(!hb){
-          hb=document.createElement("div"); hb.id="hiddenHintBar";
-          hb.style.cssText="position:absolute;top:92px;left:50%;transform:translateX(-50%);background:rgba(20,10,40,0.85);color:#ffd34d;font:bold 12px monospace;padding:4px 14px;border:1px solid #c8a2ff;border-radius:6px;z-index:50;pointer-events:none;white-space:nowrap;";
-          const wrap=document.getElementById("wrap");
-          if(wrap) wrap.appendChild(hb);
-        }
-        hb.textContent=hint; hb.style.display="block";
-      }else if(hb){ hb.style.display="none"; }
+      /* 隐藏鱼提示已移至图鉴 */
     }catch(e){}
   };
 })();
