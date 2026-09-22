@@ -5091,13 +5091,6 @@ function showHiddenDetail(mid){
         row.appendChild(btn); inner.appendChild(row);
       }
       wrap.appendChild(inner);
-      const pillRow=document.createElement("div"); pillRow.className="rodRow";
-      pillRow.innerHTML='<div class="rodInfo"><div class="rodName">🌀 四季时空丸</div><div class="rodDesc">扭转季节 · 月份变化 · 每用4次=增加1年 · 拥有 '+(SV.spacePills||0)+' 个</div></div>';
-      const pBtn=document.createElement("button"); pBtn.className="smallBtn rodBtn";
-      pBtn.innerHTML='<span class="costTag" style="color:var(--gold);">20000</span>';
-      pBtn.disabled=SV.money<20000;
-      pBtn.onclick=function(){ if(SV.money<20000) return; SV.money-=20000; SV.spacePills=(SV.spacePills||0)+1; commit(); SFX.buy(); renderShop(); updateDOM(); toast("购入四季时空丸! 去左上角使用","#c8a2ff"); };
-      pillRow.appendChild(pBtn); wrap.appendChild(pillRow);
       fd.appendChild(wrap);
     }catch(e){}
   };
@@ -5318,13 +5311,6 @@ const MEDS={
         row.appendChild(btn); inner.appendChild(row);
       }
       wrap.appendChild(inner);
-      const pillRow=document.createElement("div"); pillRow.className="rodRow";
-      pillRow.innerHTML='<div class="rodInfo"><div class="rodName">🌀 四季时空丸</div><div class="rodDesc">扭转季节 · 月份变化 · 每用4次=增加1年 · 拥有 '+(SV.spacePills||0)+' 个</div></div>';
-      const pBtn=document.createElement("button"); pBtn.className="smallBtn rodBtn";
-      pBtn.innerHTML='<span class="costTag" style="color:var(--gold);">20000</span>';
-      pBtn.disabled=SV.money<20000;
-      pBtn.onclick=function(){ if(SV.money<20000) return; SV.money-=20000; SV.spacePills=(SV.spacePills||0)+1; commit(); SFX.buy(); renderShop(); updateDOM(); toast("购入四季时空丸! 去左上角使用","#c8a2ff"); };
-      pillRow.appendChild(pBtn); wrap.appendChild(pillRow);
       fd.appendChild(wrap);
     }catch(e){}
   };
@@ -6696,6 +6682,34 @@ function drawWeatherFX(amb,t){
     }catch(e){}
   }
   setInterval(tickUI,150);
+})();
+</script>
+
+<script>
+/* ---- 商店: 特殊道具 (独立分类, 非鱼饵/药房) ---- */
+(function(){
+  try{
+    const _rsP=renderShop;
+    renderShop=function(){
+      _rsP();
+      try{
+        const fd=el("shopFood");
+        if(!fd) return;
+        const wrap=document.createElement("div");
+        wrap.innerHTML='<h3 style="margin-top:10px;">🌀 特殊道具 <span style="font-size:11px;color:#9aa3d8;">(购买后在左上角使用 · 可指定跳到任意季节 · 月份随之变化 · 每用4次=增加1年)</span></h3>';
+        const inner=document.createElement("div");
+        const pillRow=document.createElement("div"); pillRow.className="rodRow";
+        pillRow.innerHTML='<div class="rodInfo"><div class="rodName">🌀 四季时空丸</div><div class="rodDesc">指定跳到 春/夏/秋/冬 任意季节 · 月份随之变化 · 拥有 '+(SV.spacePills||0)+' 个</div></div>';
+        const pBtn=document.createElement("button"); pBtn.className="smallBtn rodBtn";
+        pBtn.innerHTML='<span class="costTag" style="color:var(--gold);">20000</span>';
+        pBtn.disabled=SV.money<20000;
+        pBtn.onclick=function(){ if(SV.money<20000) return; SV.money-=20000; SV.spacePills=(SV.spacePills||0)+1; commit(); SFX.buy(); renderShop(); updateDOM(); toast("购入四季时空丸! 去左上角使用","#c8a2ff"); };
+        pillRow.appendChild(pBtn); inner.appendChild(pillRow);
+        wrap.appendChild(inner);
+        fd.appendChild(wrap);
+      }catch(e){}
+    };
+  }catch(e){}
 })();
 </script>
 
