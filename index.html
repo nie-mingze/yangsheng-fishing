@@ -6186,7 +6186,7 @@ function checkHiddenHints(){
     if(abn){
       if(!SV._hintShown.__abn){
         SV._hintShown.__abn=1;
-        toast("🌪 极端反常天气!! 隐藏鱼全线出没, 快去钓!","#ff6b6b");
+        toast("🌪 隐藏鱼全线出没!","#ff6b6b");
       }
       return;
     }
@@ -6196,7 +6196,7 @@ function checkHiddenHints(){
       if(hiddenCond(hf)&&MAP_DEFS[m]){
         if(!SV._hintShown[m]){
           SV._hintShown[m]=1;
-          toast("🌦 "+dateText()+" ·【"+MAP_DEFS[m].name+"】"+hf.name+" 出没! 速去钓它!","#c8a2ff");
+          toast("🌦 【"+MAP_DEFS[m].name+"】"+hf.name+" 出没!","#c8a2ff");
         }
       }else{ delete SV._hintShown[m]; }
     }
@@ -6220,11 +6220,11 @@ function checkHiddenHints(){
       dh.textContent=dateText()+" · "+timeText();
       let hint=null;
       if(isAbnormalWeather()){
-        hint="🌪 极端反常天气!! 隐藏鱼全线出没 · 速去!";
+        hint="🌪 隐藏鱼全线出没!";
       }else{
         for(const m in HIDDEN_FISH){
           if(hiddenCond(HIDDEN_FISH[m])&&MAP_DEFS[m]){
-            hint="🌦 "+seasonOf()+WEATHER_NAMES[SV.weather]+" ·【"+MAP_DEFS[m].name+"】"+HIDDEN_FISH[m].name+" 出没 · 速去!";
+            hint="🌦 【"+MAP_DEFS[m].name+"】"+HIDDEN_FISH[m].name+" 出没!";
             break;
           }
         }
