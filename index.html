@@ -240,16 +240,17 @@ html,body{width:100%;height:100%;margin:0;padding:0;overflow:hidden;background:#
 #tkRight{position:absolute;right:8px;bottom:calc(116px + env(safe-area-inset-bottom));z-index:18;display:flex;flex-direction:column;gap:6px;align-items:flex-end;}
 #tkLife{background:rgba(10,13,30,.82);border:2px solid #3a3f6b;border-radius:10px;padding:6px 8px;display:flex;flex-direction:column;gap:2px;}
 #tkLife .lifeItem{font-size:11px;gap:5px;color:#cfd6ff;}
-#lifeRow .lifeItem{font-size:11px;gap:4px;color:#cfd6ff;}
-#lifeRow .barTrack{width:46px;height:7px;}
-#lifeRow .lifeNum{font-size:10px;min-width:16px;}
+#lifeRow .lifeItem{font-size:10px;gap:3px;color:#cfd6ff;white-space:nowrap;line-height:1.15;}
+#lifeRow .barTrack{width:30px;height:6px;}
+#lifeRow .lifeNum{font-size:10px;min-width:12px;}
+#lifeRow .lifeIcon{width:14px;height:14px;line-height:14px;font-size:9px;}
 #tkLife .lifeNum{font-size:10px;min-width:20px;}
 #tkLife .barTrack{width:62px;height:8px;}
 #tkBtns{display:grid;grid-template-columns:repeat(2,62px);gap:6px;justify-content:end;}
 #tkBtns .tkBtn{width:62px;height:52px;font-size:13px;border-radius:12px;display:flex;align-items:center;justify-content:center;
   border:2px solid #3a3f6b;background:rgba(26,32,64,.9);color:#cfd6ff;font-weight:bold;touch-action:none;cursor:pointer;font-family:inherit;}
 #tkBtns .tkBtn:active{background:#3d6fb5;}
-#lifeRow{position:absolute;left:50%;transform:translateX(-50%);width:max-content;max-width:66vw;bottom:calc(54px + env(safe-area-inset-bottom));z-index:18;display:flex;flex-wrap:wrap;justify-content:center;gap:2px 12px;background:rgba(10,13,30,.75);border:1px solid #3a3f6b;border-radius:10px;padding:4px 10px;}
+#lifeRow{position:absolute;left:auto;right:8px;top:calc(126px + env(safe-area-inset-top));width:180px;z-index:18;display:grid;grid-template-columns:repeat(2,1fr);gap:3px 8px;justify-items:end;align-items:center;background:rgba(10,13,30,.78);border:1px solid #3a3f6b;border-radius:10px;padding:4px 8px;}
 /* 手游版: 状态条右对齐窄条, 不遮挡左下按钮 */
 
 
@@ -295,7 +296,11 @@ html,body{width:100%;height:100%;margin:0;padding:0;overflow:hidden;background:#
   #tkGear{right:8px;top:8px;}
   #tkLeft{left:8px;right:auto;margin:0;bottom:calc(116px + env(safe-area-inset-bottom));transform:none;}
   #tkRight{right:8px;left:auto;margin:0;bottom:calc(116px + env(safe-area-inset-bottom));transform:none;}
-  #lifeRow{left:50%;transform:translateX(-50%);bottom:calc(50px + env(safe-area-inset-bottom));}
+  #lifeRow{left:50%;right:auto;top:auto;width:max-content;transform:translateX(-50%);bottom:calc(50px + env(safe-area-inset-bottom));display:flex;flex-wrap:wrap;justify-content:center;gap:2px 12px;}
+  #lifeRow .lifeItem{font-size:11px;gap:4px;}
+  #lifeRow .barTrack{width:46px;height:7px;}
+  #lifeRow .lifeNum{font-size:10px;min-width:16px;}
+  #lifeRow .lifeIcon{width:16px;height:16px;line-height:16px;font-size:11px;}
   #tkFight{bottom:auto;top:50%;left:50%;transform:translate(-50%,-50%);}
 }
 </style>
@@ -6575,9 +6580,9 @@ function drawWeatherFX(amb,t){
       var anyModal=false;
       var msa=document.querySelectorAll(".modal.show");
       for(var i=0;i<msa.length;i++) anyModal=true;
-      ["tkLeft","tkRight","tkGear"].forEach(function(id){
+      ["tkLeft","tkRight","tkGear","lifeRow"].forEach(function(id){
         var e=document.getElementById(id);
-        if(e) e.style.display=(fishing&&!inScreen&&!anyModal)?"flex":"none";
+        if(e) e.style.display=(fishing&&!inScreen&&!anyModal)?"":"none";
       });
       var fight=document.getElementById("tkFight");
       if(fight){
