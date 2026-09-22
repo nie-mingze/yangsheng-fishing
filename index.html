@@ -102,9 +102,9 @@
   #hint{background:rgba(11,13,26,.85);border:3px solid var(--border);outline:2px solid #3a3f6b;
     color:#cfe0ff;font-size:15px;font-weight:bold;padding:6px 16px;white-space:nowrap;}
 
-  #toasts{position:absolute;left:50%;top:70px;transform:translateX(-50%);display:flex;flex-direction:column;gap:6px;align-items:center;z-index:60;}
+  #toasts{position:fixed;left:50%;top:calc(102px + env(safe-area-inset-top));transform:translateX(-50%);display:flex;flex-direction:column;gap:6px;align-items:center;z-index:99;pointer-events:none;width:max-content;max-width:94vw;}
   .toast{background:var(--panel);border:3px solid var(--border);outline:2px solid #3a3f6b;
-    font-size:14px;font-weight:bold;padding:5px 12px;animation:fadeout 1.8s forwards;white-space:nowrap;}
+    font-size:13px;font-weight:bold;padding:4px 10px;animation:fadeout 1.8s forwards;white-space:normal;text-align:center;max-width:94vw;}
   @keyframes fadeout{0%{opacity:0;transform:translateY(-8px);}12%{opacity:1;transform:translateY(0);}78%{opacity:1;}100%{opacity:0;}}
 
   /* ---- 弹窗通用 ---- */
