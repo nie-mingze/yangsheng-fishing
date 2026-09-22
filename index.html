@@ -1160,6 +1160,7 @@ function render(){
 function setHint(t){ const h=el("hint"); h.style.display="block"; h.textContent=t; }
 function showBars(){ el("bars").style.display="flex"; }
 function hideBars(){ el("bars").style.display="none"; }
+(function(){ var _ts=document.getElementById("toasts"); if(_ts && _ts.parentNode && _ts.parentNode!==document.body){ try{ document.body.appendChild(_ts); }catch(e){} } })();
 function toast(msg,color){ const d=document.createElement("div"); d.className="toast"; d.textContent=msg; if(color)d.style.color=color; el("toasts").appendChild(d); setTimeout(()=>d.remove(),1900); }
 function startCast(){
   G.sub="cast"; G.charge=0; G.fish=null; G.fishLen=0; G.bobberX=0; G.T=0; G.P=0;
